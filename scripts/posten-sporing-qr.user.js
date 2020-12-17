@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name        Posten Sporing - QR Kode
+// @name        Posten/Bring Sporing - QR Kode
 // @namespace   github.com/Decicus
-// @description My garbage method of adding a QR code for easy scanning into my Posten.no tracking app.
-// @version     1.2.1
+// @version     1.2.2
 // @match       https://sporing.posten.no/sporing/*
+// @match       https://sporing.bring.no/sporing/*
 // @grant       none
 // @downloadURL https://gist.githubusercontent.com/Decicus/0bfe36921a5dd92e679c4eb8ba67264d/raw/PostenSporing.user.js
 // @updateURL   https://gist.githubusercontent.com/Decicus/0bfe36921a5dd92e679c4eb8ba67264d/raw/PostenSporing.user.js
