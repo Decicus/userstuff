@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name        LowEndForums - Blacklist Users
 // @namespace   github.com/Decicus
-// @match       https://www.lowendtalk.com/discussion/*
-// @match       https://talk.lowendspirit.com/discussion/*
+// @match       https://www.lowendtalk.com/*
+// @match       https://talk.lowendspirit.com/*
 // @grant       GM_getValue
-// @version     1.2.0
+// @grant       GM_setValue
+// @version     1.3.0
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -18,15 +19,47 @@
  *
  * Forum usernames are case sensitive; 'decicus' won't match 'Decicus' and vice versa.
  */
-const users = GM_getValue('blacklistedUsers', []);
+let users = GM_getValue('blacklistedUsers', {
+    comments: [],
+    threads: [],
+});
+
+let settings = GM_getValue('settings', null);
+
+if (!settings) {
+    const defaultSettings = {
+        hideComments: true,
+        hideThreads: false,
+    };
+
+    GM_setValue('settings', defaultSettings);
+    settings = defaultSettings;
+}
+
+/**
+ * Convert from old users array to new users _object_
+ */
+if (Array.isArray(users)) {
+    users = {
+        comments: users,
+        threads: [],
+    };
+
+    GM_setValue('blacklistedUsers', users);
+}
 
 let commentsHidden = false;
-const hiddenElements = {};
-let hiddenCount = 0;
+const hiddenComments = {};
+let hiddenCommentCount = 0;
 
-let toggleButtonAction = null;
+let threadsHidden = false;
+const hiddenThreads = {};
+let hiddenThreadCount = 0;
 
-function toggleElements()
+let toggleCommentsBtnAction = null;
+let toggleThreadsBtnAction = null;
+
+function toggleCommentElements()
 {
     /**
      * Flip the status.
@@ -37,11 +70,11 @@ function toggleElements()
      * Tweak text based on the *new* hide status
      */
     const hideText = commentsHidden ? 'Hiding' : 'Showing';
-    toggleButtonAction.textContent = commentsHidden ? 'Show' : 'Hide';
+    toggleCommentsBtnAction.textContent = commentsHidden ? 'Show' : 'Hide';
     
-    for (const user of users)
+    for (const user of users.comments)
     {
-        for (const element of hiddenElements[user])
+        for (const element of hiddenComments[user])
         {
             console.log(`[LowEndTalk - Blacklist Users] ${hideText} comment from ${user}:`, element);
 
@@ -55,16 +88,21 @@ function toggleElements()
     }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    for (const user of users)
+function hideComments()
+{
+    if (!settings.hideComments) {
+        return;
+    }
+
+    for (const user of users.comments)
     {
         /**
          * Find all comments by user
          */
-        const elements = Array.from(document.querySelectorAll(`.Author > .PhotoWrap[title="${user}"]`));
+        const elements = document.querySelectorAll(`.Author > .PhotoWrap[title="${user}"]`);
         
-        hiddenElements[user] = [];
-        hiddenCount += elements.length;
+        hiddenComments[user] = [];
+        hiddenCommentCount += elements.length;
         
         for (const element of elements)
         {
@@ -84,14 +122,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 // .Item.ItemComment.Role_Member
                 .parentElement;
             
-            hiddenElements[user].push(commentElement);
+            hiddenComments[user].push(commentElement);
         }
     }
     
     /**
      * If there are no comments to hide, we skip the rest.
      */
-    if (hiddenCount === 0) {
+    if (hiddenCommentCount === 0) {
         console.log('[LowEndTalk - Blacklist Users] No comments from blacklist users found');
         return;
     }
@@ -100,11 +138,7 @@ window.addEventListener('DOMContentLoaded', () => {
      * document.createElement() is far too convoluted for this shit.
      * Just handcraft it.
      */
-    const toggleButtonHtml = `
-        <div class="Buttons" style="text-align: right;">
-            <button class="Button Primary" id="toggleHiddenComments"><span class="action">Show</span> ${hiddenCount} comment${hiddenCount === 1 ? '' : 's'} from blacklisted users</button>
-        </div>
-    `;
+    const toggleButtonHtml = `<a href="#" class="Button Secondary Action BigButton" id="toggleHiddenComments"><span class="action">Show</span> ${hiddenCommentCount} comment${hiddenCommentCount === 1 ? '' : 's'} from blacklisted users</a>`;
 
     /**
      * Add the button to the page
@@ -116,16 +150,90 @@ window.addEventListener('DOMContentLoaded', () => {
      * Add event handler for the button, so it actually works
      */
     const toggleButton = document.querySelector('#toggleHiddenComments');
-    toggleButton.addEventListener('click', toggleElements);
+    toggleButton.addEventListener('click', toggleCommentElements);
 
     /**
-     * Used to allow toggleElements() to set the 'action' on the button.
+     * Used to allow toggleCommentElements() to set the 'action' on the button.
      * I'll admit that doing it this way is kind of ghetto, but I don't care.
      */
-    toggleButtonAction = toggleButton.querySelector('.action');
+    toggleCommentsBtnAction = toggleButton.querySelector('.action');
     
     /**
      * Trigger the function that actually hides the comments
      */
-    toggleElements();
+    toggleCommentElements();
+}
+
+/**
+ * Thread handling.
+ * Lots of duplicate code from the 'hide comments' handling, but whatever.
+ */
+function toggleThreadElements()
+{
+    /**
+     * Flip the status.
+     */
+    threadsHidden = !threadsHidden;
+    
+    /**
+     * Tweak text based on the *new* hide status
+     */
+    const hideText = threadsHidden ? 'Hiding' : 'Showing';
+    toggleThreadsBtnAction.textContent = threadsHidden ? 'Show' : 'Hide';
+    
+    for (const user of users.threads)
+    {
+        for (const element of hiddenThreads[user])
+        {
+            console.log(`[LowEndTalk - Blacklist Users] ${hideText} thread from ${user}:`, element);
+
+            if (threadsHidden) {
+                element.classList.add('hidden');
+                continue;
+            }
+
+            element.classList.remove('hidden');
+        }
+    }
+}
+
+function hideThreads()
+{
+    if (!settings.hideThreads) {
+        return;
+    }
+
+    for (const user of users.threads) {
+        const elements = document.querySelectorAll(`.ItemDiscussion-withPhoto > .PhotoWrap[title="${user}"]`);
+
+        hiddenThreads[user] = [];
+        hiddenThreadCount += elements.length;
+
+        for (const element of elements) {
+            const threadElement = element.parentElement;
+
+            hiddenThreads[user].push(threadElement);
+        }
+
+        if (hiddenThreadCount === 0) {
+            console.log('[LowEndTalk - Blacklist Users] No threads from blacklist users found');
+            return;
+        }
+
+        const toggleButtonHtml = `<a href="#" class="Button Secondary Action BigButton" id="toggleHiddenThreads"><span class="action">Show</span> ${hiddenThreadCount} thread${hiddenThreadCount === 1 ? '' : 's'} from blacklisted authors</a>`;
+
+        const buttonLocation = document.querySelector('ul.Discussions');
+        buttonLocation.insertAdjacentHTML('beforebegin', toggleButtonHtml);
+
+        const toggleButton = document.querySelector('#toggleHiddenThreads');
+        toggleButton.addEventListener('click', toggleThreadElements);
+
+        toggleThreadsBtnAction = toggleButton.querySelector('.action');
+        toggleThreadElements();
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    hideComments();
+    hideThreads();
 });
