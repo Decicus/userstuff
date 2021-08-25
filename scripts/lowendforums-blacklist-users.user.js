@@ -5,7 +5,7 @@
 // @match       https://talk.lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.3.0
+// @version     1.3.1
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -19,11 +19,7 @@
  *
  * Forum usernames are case sensitive; 'decicus' won't match 'Decicus' and vice versa.
  */
-let users = GM_getValue('blacklistedUsers', {
-    comments: [],
-    threads: [],
-});
-
+let users = GM_getValue('blacklistedUsers', null);
 let settings = GM_getValue('settings', null);
 
 if (!settings) {
@@ -39,7 +35,7 @@ if (!settings) {
 /**
  * Convert from old users array to new users _object_
  */
-if (Array.isArray(users)) {
+if (!users || Array.isArray(users)) {
     users = {
         comments: users,
         threads: [],
@@ -214,23 +210,23 @@ function hideThreads()
 
             hiddenThreads[user].push(threadElement);
         }
-
-        if (hiddenThreadCount === 0) {
-            console.log('[LowEndTalk - Blacklist Users] No threads from blacklist users found');
-            return;
-        }
-
-        const toggleButtonHtml = `<a href="#" class="Button Secondary Action BigButton" id="toggleHiddenThreads"><span class="action">Show</span> ${hiddenThreadCount} thread${hiddenThreadCount === 1 ? '' : 's'} from blacklisted authors</a>`;
-
-        const buttonLocation = document.querySelector('ul.Discussions');
-        buttonLocation.insertAdjacentHTML('beforebegin', toggleButtonHtml);
-
-        const toggleButton = document.querySelector('#toggleHiddenThreads');
-        toggleButton.addEventListener('click', toggleThreadElements);
-
-        toggleThreadsBtnAction = toggleButton.querySelector('.action');
-        toggleThreadElements();
     }
+
+    if (hiddenThreadCount === 0) {
+        console.log('[LowEndTalk - Blacklist Users] No threads from blacklist users found');
+        return;
+    }
+
+    const toggleButtonHtml = `<a href="#" class="Button Secondary Action BigButton" id="toggleHiddenThreads"><span class="action">Show</span> ${hiddenThreadCount} thread${hiddenThreadCount === 1 ? '' : 's'} from blacklisted authors</a>`;
+
+    const buttonLocation = document.querySelector('ul.Discussions');
+    buttonLocation.insertAdjacentHTML('beforebegin', toggleButtonHtml);
+
+    const toggleButton = document.querySelector('#toggleHiddenThreads');
+    toggleButton.addEventListener('click', toggleThreadElements);
+
+    toggleThreadsBtnAction = toggleButton.querySelector('.action');
+    toggleThreadElements();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
