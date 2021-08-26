@@ -37,7 +37,13 @@ function extractChoices()
     }
 
     const choices = data.contentChoiceData;
-    const initial = choices.initial || choices['initial-get-all-games'];
+    
+    let initialKey = 'initial';
+    if (!choices.initial) {
+        initialKey = 'initial-get-all-games';
+    }
+
+    const initial = choices[initialKey];
 
     if (!initial) {
         console.error('Could not find initial data via choices:', choices);
@@ -51,8 +57,8 @@ function extractChoices()
     const monthSlug = data.productUrlPath;
 
     let redeemedGames = [];
-    if (redeemedChoices && redeemedChoices.initial && redeemedChoices.initial.choices_made) {
-        redeemedGames = redeemedChoices.initial.choices_made;
+    if (redeemedChoices && redeemedChoices[initialKey] && redeemedChoices[initialKey].choices_made) {
+        redeemedGames = redeemedChoices[initialKey].choices_made;
     }
 
     /**
