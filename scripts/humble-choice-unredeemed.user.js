@@ -3,7 +3,9 @@
 // @namespace   github.com/Decicus
 // @match       https://www.humblebundle.com/subscription/*-*
 // @grant       GM_setClipboard
-// @version     1.0.0
+// @version     1.1.0
+// @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
+// @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @author      Decicus
 // @description Grabs a list of the _unredeemed_ Humble Choice games with DRM (e.g. Steam), game title and month/bundle. This does NOT request a key or gift link.
 // ==/UserScript==
