@@ -2,23 +2,32 @@
 // @name        Humble Choice - Unredeemed Games to Markdown
 // @namespace   github.com/Decicus
 // @match       https://www.humblebundle.com/subscription/*-*
+// @match       https://www.humblebundle.com/membership/*-*
 // @grant       GM_setClipboard
 // @grant       unsafeWindow
-// @version     1.2.0
+// @version     1.3.0
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @author      Decicus
 // @description Grabs a list of the _unredeemed_ Humble Choice games with DRM (e.g. Steam), game title and month/bundle. This does NOT request a key or gift link.
 // ==/UserScript==
 
-/**
- * This is eventually removed from the DOM, so we have to extract it as early as possible.
- */
-const productDataElement = document.querySelector('#webpack-monthly-product-data');
-let productData = null;
-if (productDataElement) {
-    productData = JSON.parse(productDataElement.textContent.trim());
-    console.log(productData);
+async function getProductData()
+{
+    const response = await fetch(window.location.href);
+    const html = await response.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const productDataElement = doc.querySelector('#webpack-monthly-product-data');
+    let productData = null;
+    if (productDataElement) {
+        productData = JSON.parse(productDataElement.textContent.trim());
+        console.log(productData);
+    }
+
+    return productData;
 }
 
 const choicesStorageKey = 'storedChoices';
@@ -40,8 +49,9 @@ function setChoicesStore(choices)
     return choices;
 }
 
-function extractChoices()
+async function extractChoices()
 {
+    const productData = await getProductData();
     if (!productData) {
         console.error('Unable to find productData dump in DOM');
         return;
@@ -77,20 +87,16 @@ function extractChoices()
 
     const choices = data.contentChoiceData;
 
-    let initialKey = 'initial';
-    if (!choices.initial) {
-        initialKey = 'initial-get-all-games';
-    }
-
-    const initial = choices[initialKey];
+    const initialKey = 'initial';
+    const initial = choices.initial || choices.game_data;
 
     if (!initial) {
         console.error('Could not find initial data via choices:', choices);
         return;
     }
 
-    const order = initial.display_order;
-    const games = initial.content_choices;
+    const order = choices.display_order || initial.display_order;
+    const games = initial.content_choices || initial;
     const redeemedChoices = data.contentChoicesMade;
     const monthTitle = data.title;
     const monthSlug = data.productUrlPath;
@@ -165,42 +171,51 @@ function extractChoices()
         }
 
         /**
-         * TODO:
-         * Handle this janky ass alternative package format.
+         * Janky format used when there are multiple redeem options (usually Steam + EGS)
          */
-        // const nestedTpkds = game.nested_choice_tpkds || null;
-        // if (nestedTpkds) {
-        //     for (const providerSlug in nestedTpkds) {
-        //         const provider = nestedTpkds[providerSlug];
+        const nestedTpkds = game.nested_choice_tpkds || null;
+        if (nestedTpkds) {
+            for (const providerSlug of Object.keys(nestedTpkds)) {
+                const provider = nestedTpkds[providerSlug];
 
-        //         /**
-        //          * Add Steam store link
-        //          */
-        //         const steam = providerSlug.includes('_steam');
-        //         if (steam) {
-        //             const steamAppId = provider.steam_app_id;
-        //             html += `<p><a href="https://store.steampowered.com/app/${steamAppId}/"><i class="fab fa-steam fa-1x fa-fw"></i> Steam Store</a></p>\n`;
+                /**
+                 * Add Steam store link
+                 */
+                const steam = provider.find(tpk => tpk.key_type === 'steam');
+                if (steam) {
+                    const steamAppId = steam.steam_app_id;
+                    html += `<p><a href="https://store.steampowered.com/app/${steamAppId}/"><i class="fab fa-steam fa-1x fa-fw"></i> Steam Store</a></p>\n`;
 
-        //             providers.steam = {
-        //                 appId: steamAppId,
-        //             };
+                    providers.steam = {
+                        appId: steamAppId,
+                    };
 
-        //             continue;
-        //         }
+                    continue;
+                }
 
-        //         // Epic Games
-        //         const ;
-        //         if (gog) {
-        //             html += `<p>GOG</p>\n`;
+                const epicGames = provider.find(tpk => tpk.key_type.includes('epic'));
+                if (epicGames) {
+                    html += `<p>🇪 Epic Games</p>\n`;
 
-        //             providers.gog = {
-        //                 hasKey: true,
-        //             };
+                    providers.epicGames = {
+                        hasKey: true,
+                    };
 
-        //             continue;
-        //         }
-        //     }
-        // }
+                    continue;
+                }
+
+                const gog = provider.find(tpk => tpk.key_type.includes('gog'));
+                if (gog) {
+                    html += `<p>GOG</p>\n`;
+
+                    providers.gog = {
+                        hasKey: true,
+                    };
+
+                    continue;
+                }
+            }
+        }
 
         gameData.providers = providers;
         gameData.platforms = game.platforms || [];
@@ -264,6 +279,4 @@ function extractChoices()
     });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    extractChoices();
-});
+extractChoices();
