@@ -1,48 +1,33 @@
 // ==UserScript==
 // @name        Posten/Bring Sporing - QR Kode
 // @namespace   github.com/Decicus
-// @version     1.2.2
+// @version     1.4.2
 // @match       https://sporing.posten.no/sporing/*
 // @match       https://sporing.bring.no/sporing/*
 // @grant       none
 // @downloadURL https://gist.githubusercontent.com/Decicus/0bfe36921a5dd92e679c4eb8ba67264d/raw/PostenSporing.user.js
 // @updateURL   https://gist.githubusercontent.com/Decicus/0bfe36921a5dd92e679c4eb8ba67264d/raw/PostenSporing.user.js
 // ==/UserScript==
-
-const delay = 100;
-
-let current = 0;
-const max = 30000; // 30 seconds
-const interval = setInterval(() => {
-    /**
-     * Clear the interval prematurely if it lasts more than `max`
-     */
-    current += delay;
-    if (current > max) {
-        clearInterval(interval);
-        console.error('Cleared interval early because parent does not exist.');
+function handleMutationsList(list, observer) {
+    const target = document.querySelector('.hw-wysiwyg > div > div');
+    if (!target) {
         return;
     }
-    
-    /**
-     * Can't find the parent element,
-     * so we let the interval continue until it does.
-     */
-    const parent = document.querySelector('div.hw-grid:nth-child(3) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)');
-    if (!parent) {
-        return;
-    }
-    
+
+    observer.disconnect();
     const url = new URL(window.location.href);
     const sporingsnummer = url.pathname.replace('/sporing/', '');
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=75x75&data=${sporingsnummer}`;
+    const resolution = 125;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${resolution}x${resolution}&data=${sporingsnummer}`;
 
-    const html = `<img src="${qrUrl}" style="text-align: center;" alt="QR Code">`;
-    parent.insertAdjacentHTML('beforeend', html);
-    
-    /**
-     * We've done what we came here to do, bye.
-     */
-    console.log('Added QR code and cleared interval, cheers!');
-    clearInterval(interval);
-}, delay);
+    const html = `<div><small><b>QR Code</b></small><div class="hw-block hw-block--pb-smallest"><img src="${qrUrl}" style="text-align: center;" alt="QR Code"></div></div>`;
+    target.insertAdjacentHTML('beforeend', html);
+
+    console.log('Added QR code');
+}
+
+const observer = new MutationObserver(handleMutationsList);
+observer.observe(document.querySelector('main'), {
+    subtree: true,
+    childList: true,
+});
