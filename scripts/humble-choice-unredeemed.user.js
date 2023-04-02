@@ -5,7 +5,7 @@
 // @match       https://www.humblebundle.com/membership/*-*
 // @grant       GM_setClipboard
 // @grant       unsafeWindow
-// @version     1.3.0
+// @version     1.4.0
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @author      Decicus
@@ -74,7 +74,7 @@ async function extractChoices()
      *
      * It's an easy fix to prevent duplicating buttons.
      */
-    const buttonIds = ['copyGamesHtml', 'copyTitleList', 'copyGamesJson'];
+    const buttonIds = ['copyGamesHtml', 'copyMonthJson', 'copyGamesJson'];
     for (const buttonId of buttonIds) {
         const btn = document.querySelector(`#${buttonId}`);
 
@@ -235,13 +235,13 @@ async function extractChoices()
     setChoicesStore(storedChoices);
 
     const buttonLocation = document.querySelector('.button-v2');
-    // Button for copying the full HTML of titles, descriptions etc.
-    const buttonHtml = `<a id="copyGamesHtml" class="button-v2 return-button owns-content" href="#"><div class="button-icon-container"><i class="hb hb-clipboard button-icon"></i></div><div class="button-text">Copy local storage JSON</div></a>`;
+    // Button for copying the JSON of all months, with titles, descriptions etc.
+    const buttonHtml = `<a id="copyGamesHtml" class="button-v2 return-button owns-content" href="#"><div class="button-icon-container"><i class="hb hb-clipboard button-icon"></i></div><div class="button-text">Copy full JSON</div></a>`;
 
-    // Button for copying the HTML list (`li`) of titles
-    const listHtml = `<a id="copyTitleList" class="button-v2 return-button owns-content" href="#"><div class="button-icon-container"><i class="hb hb-clipboard button-icon"></i></div><div class="button-text">Copy Title List</div></a>`;
+    // Button for copying just the current month JSON
+    const monthHtml = `<a id="copyMonthJson" class="button-v2 return-button owns-content" href="#"><div class="button-icon-container"><i class="hb hb-clipboard button-icon"></i></div><div class="button-text">Copy current month JSON</div></a>`;
 
-    buttonLocation.insertAdjacentHTML('beforebegin', listHtml);
+    buttonLocation.insertAdjacentHTML('beforebegin', monthHtml);
     buttonLocation.insertAdjacentHTML('beforebegin', buttonHtml);
 
     // Handle button click for copying full HTML
@@ -263,18 +263,25 @@ async function extractChoices()
     });
 
     // Handle button click for copying HTML title list
-    const listBtn = document.querySelector('#copyTitleList');
-    listBtn.addEventListener('click', () => {
-        GM_setClipboard(titleListHtml);
+    const monthBtn = document.querySelector('#copyMonthJson');
+    monthBtn.addEventListener('click', () => {
+        const choices = getChoicesStore();
 
-        const btnText = listBtn.querySelector('.button-text');
+        let result = {};
+        if (choices[monthSlug]) {
+            result[monthSlug] = choices[monthSlug];
+        }
+
+        GM_setClipboard(JSON.stringify(result));
+
+        const btnText = monthBtn.querySelector('.button-text');
         btnText.textContent = 'Copied!';
 
-        listBtn.setAttribute('disabled', '1');
+        monthBtn.setAttribute('disabled', '1');
 
         setTimeout(() => {
-            btnText.textContent = 'Copy Title List';
-            listBtn.removeAttribute('disabled');
+            btnText.textContent = 'Copy current month JSON';
+            monthBtn.removeAttribute('disabled');
         }, 2000);
     });
 }
