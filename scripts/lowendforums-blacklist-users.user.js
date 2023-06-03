@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        LowEndForums - Blacklist Users
 // @namespace   github.com/Decicus
-// @match       https://www.lowendtalk.com/*
-// @match       https://talk.lowendspirit.com/*
+// @match       https://lowendtalk.com/*
+// @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.3.1
+// @version     1.3.2
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -55,19 +55,19 @@ let hiddenThreadCount = 0;
 let toggleCommentsBtnAction = null;
 let toggleThreadsBtnAction = null;
 
-function toggleCommentElements()
+function toggleCommentElements(ev)
 {
     /**
      * Flip the status.
      */
     commentsHidden = !commentsHidden;
-    
+
     /**
      * Tweak text based on the *new* hide status
      */
     const hideText = commentsHidden ? 'Hiding' : 'Showing';
     toggleCommentsBtnAction.textContent = commentsHidden ? 'Show' : 'Hide';
-    
+
     for (const user of users.comments)
     {
         for (const element of hiddenComments[user])
@@ -96,10 +96,10 @@ function hideComments()
          * Find all comments by user
          */
         const elements = document.querySelectorAll(`.Author > .PhotoWrap[title="${user}"]`);
-        
+
         hiddenComments[user] = [];
         hiddenCommentCount += elements.length;
-        
+
         for (const element of elements)
         {
             /**
@@ -117,11 +117,11 @@ function hideComments()
                 .parentElement
                 // .Item.ItemComment.Role_Member
                 .parentElement;
-            
+
             hiddenComments[user].push(commentElement);
         }
     }
-    
+
     /**
      * If there are no comments to hide, we skip the rest.
      */
@@ -129,12 +129,12 @@ function hideComments()
         console.log('[LowEndTalk - Blacklist Users] No comments from blacklist users found');
         return;
     }
-    
+
     /**
      * document.createElement() is far too convoluted for this shit.
      * Just handcraft it.
      */
-    const toggleButtonHtml = `<a href="#" class="Button Secondary Action BigButton" id="toggleHiddenComments"><span class="action">Show</span> ${hiddenCommentCount} comment${hiddenCommentCount === 1 ? '' : 's'} from blacklisted users</a>`;
+    const toggleButtonHtml = `<a class="Button Secondary Action BigButton" id="toggleHiddenComments"><span class="action">Show</span> ${hiddenCommentCount} comment${hiddenCommentCount === 1 ? '' : 's'} from blacklisted users</a>`;
 
     /**
      * Add the button to the page
@@ -153,7 +153,7 @@ function hideComments()
      * I'll admit that doing it this way is kind of ghetto, but I don't care.
      */
     toggleCommentsBtnAction = toggleButton.querySelector('.action');
-    
+
     /**
      * Trigger the function that actually hides the comments
      */
@@ -170,13 +170,13 @@ function toggleThreadElements()
      * Flip the status.
      */
     threadsHidden = !threadsHidden;
-    
+
     /**
      * Tweak text based on the *new* hide status
      */
     const hideText = threadsHidden ? 'Hiding' : 'Showing';
     toggleThreadsBtnAction.textContent = threadsHidden ? 'Show' : 'Hide';
-    
+
     for (const user of users.threads)
     {
         for (const element of hiddenThreads[user])
@@ -217,7 +217,7 @@ function hideThreads()
         return;
     }
 
-    const toggleButtonHtml = `<a href="#" class="Button Secondary Action BigButton" id="toggleHiddenThreads"><span class="action">Show</span> ${hiddenThreadCount} thread${hiddenThreadCount === 1 ? '' : 's'} from blacklisted authors</a>`;
+    const toggleButtonHtml = `<a class="Button Secondary Action BigButton" id="toggleHiddenThreads"><span class="action">Show</span> ${hiddenThreadCount} thread${hiddenThreadCount === 1 ? '' : 's'} from blacklisted authors</a>`;
 
     const buttonLocation = document.querySelector('ul.Discussions');
     buttonLocation.insertAdjacentHTML('beforebegin', toggleButtonHtml);
@@ -229,7 +229,5 @@ function hideThreads()
     toggleThreadElements();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    hideComments();
-    hideThreads();
-});
+hideComments();
+hideThreads();
