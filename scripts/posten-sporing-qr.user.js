@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Posten/Bring Sporing - QR Kode
 // @namespace   github.com/Decicus
-// @version     1.5.0
+// @version     1.5.1
 // @match       https://sporing.posten.no/sporing/*
 // @match       https://sporing.bring.no/sporing/*
 // @match       https://beta.sporing.posten.no/sporing/*
@@ -19,10 +19,10 @@ function getQrUrl()
     return qrUrl;
 }
 
-let qrAdded = false;
 function handleMutationsList(list, observer) {
-    if (qrAdded) {
-        return;
+    const qrCodeElement = document.querySelector('#userscript-qr-code');
+    if (qrCodeElement) {
+        qrCodeElement.remove();
     }
 
     let isNewPage = false;
@@ -41,18 +41,17 @@ function handleMutationsList(list, observer) {
     }
 
     let elementLocation = 'beforeend';
-    let html = `<div><small><b>QR Code</b></small><div class="hw-block hw-block--pb-smallest"></div></div>`;
+    let html = `<div id="userscript-qr-code"><small><b>QR Code</b></small><div class="hw-block hw-block--pb-smallest"></div></div>`;
 
     if (isNewPage) {
         elementLocation = 'beforebegin';
-        html = `<div class="hw-grid__item hw-large--one-half mt-medium-4 large:mt-large-1"><h2>QR Code</h2><div class="mt-small-2 large:mt-small-3"><img src="${getQrUrl()}" title="Scan with the Posten app" alt="QR Code"></div></div>`;
+        html = `<div id="userscript-qr-code" class="hw-grid__item hw-large--one-half mt-medium-4 large:mt-large-1"><h2>QR Code</h2><div class="mt-small-2 large:mt-small-3"><img src="${getQrUrl()}" title="Scan with the Posten app" alt="QR Code"></div></div>`;
         // Padding between QR code and "Pakkehistorikk"
         html += '<div class="hw-grid__item"></div>';
         target = target.parentElement;
     }
 
     target.insertAdjacentHTML(elementLocation, html);
-    qrAdded = true;
     console.log('Added QR code');
 }
 
