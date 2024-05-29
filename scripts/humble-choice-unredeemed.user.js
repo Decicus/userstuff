@@ -5,13 +5,19 @@
 // @match       https://www.humblebundle.com/membership/*-*
 // @grant       GM_setClipboard
 // @grant       unsafeWindow
-// @version     1.4.0
+// @version     1.5.0
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @author      Decicus
 // @description Grabs a list of the _unredeemed_ Humble Choice games with DRM (e.g. Steam), game title and month/bundle. This does NOT request a key or gift link.
 // ==/UserScript==
 
+/**
+ * We make a GET request to the same page we're currently visiting.
+ * The reason for this is simply to fetch the JSON object that's embedded into the DOM.
+ * Usually this JSON object is removed from the DOM too quickly for us to grab it by the time the script runs,
+ * so this code works around that problem.
+ */
 async function getProductData()
 {
     const response = await fetch(window.location.href);
@@ -46,9 +52,12 @@ function setChoicesStore(choices)
 {
     unsafeWindow.localStorage.setItem(choicesStorageKey, JSON.stringify(choices));
 
+    console.log('Stored choices:', choices);
     return choices;
 }
 
+// Special key that's handled by games.alex.lol
+const extendedDataKey = 'meta_extended_data';
 async function extractChoices()
 {
     const productData = await getProductData();
@@ -88,7 +97,7 @@ async function extractChoices()
     const choices = data.contentChoiceData;
 
     const initialKey = 'initial';
-    const initial = choices.initial || choices.game_data;
+    const initial = choices.initial || choices.game_data || choices['initial-get-all-games'];
 
     if (!initial) {
         console.error('Could not find initial data via choices:', choices);
@@ -96,6 +105,7 @@ async function extractChoices()
     }
 
     const order = choices.display_order || initial.display_order;
+    const extras = choices.extras || initial.extras;
     const games = initial.content_choices || initial;
     const redeemedChoices = data.contentChoicesMade;
     const monthTitle = data.title;
@@ -226,6 +236,23 @@ async function extractChoices()
     }
 
     html += '\n</div>';
+
+    if (extras) {
+        const extraData = {};
+
+        for (const extra of extras) {
+            const { human_name, icon_path, machine_name } = extra;
+
+            extraData[machine_name] = {
+                human_name,
+                icon_path,
+            };
+        }
+
+        allGamesData[extendedDataKey] = {
+            extras: extraData,
+        };
+    }
 
     /**
      * Save to localStorage
