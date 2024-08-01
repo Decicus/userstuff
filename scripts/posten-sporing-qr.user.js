@@ -5,8 +5,8 @@
 // @match       https://sporing.posten.no/sporing/*
 // @match       https://sporing.bring.no/sporing/*
 // @grant       none
-// @downloadURL https://gist.githubusercontent.com/Decicus/0bfe36921a5dd92e679c4eb8ba67264d/raw/PostenSporing.user.js
-// @updateURL   https://gist.githubusercontent.com/Decicus/0bfe36921a5dd92e679c4eb8ba67264d/raw/PostenSporing.user.js
+// @downloadURL https://github.com/Decicus/userstuff/raw/master/scripts/posten-sporing-qr.user.js
+// @updateURL   https://github.com/Decicus/userstuff/raw/master/scripts/posten-sporing-qr.user.js
 // ==/UserScript==
 function getQrUrl()
 {
