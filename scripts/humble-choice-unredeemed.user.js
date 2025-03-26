@@ -4,8 +4,10 @@
 // @match       https://www.humblebundle.com/subscription/*-*
 // @match       https://www.humblebundle.com/membership/*-*
 // @grant       GM_setClipboard
+// @grant       GM_openInTab
+// @grant       GM_addStyle
 // @grant       unsafeWindow
-// @version     1.5.0
+// @version     1.6.0
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @author      Decicus
@@ -54,6 +56,32 @@ function setChoicesStore(choices)
 
     console.log('Stored choices:', choices);
     return choices;
+}
+
+function refreshChoiceData()
+{
+    let interval = null;
+    const slugs = Object.keys(getChoicesStore());
+
+    let lastIdx = -1;
+    interval = setInterval(() => {
+        lastIdx++;
+        if (!slugs[lastIdx]) {
+            clearInterval(interval);
+            return;
+        }
+
+        const slug = slugs[lastIdx];
+        const url = `https://www.humblebundle.com/membership/${slug}`;
+
+        const choiceTab = GM_openInTab(url, {active: false});
+
+        setTimeout(() => {
+            if (choiceTab) {
+                choiceTab.close();
+            }
+        }, 3500);
+    }, 7500);
 }
 
 // Special key that's handled by games.alex.lol
@@ -164,8 +192,22 @@ async function extractChoices()
                 const steamAppId = steam.steam_app_id;
                 html += `<p><a href="https://store.steampowered.com/app/${steamAppId}/"><i class="fab fa-steam fa-1x fa-fw"></i> Steam Store</a></p>\n`;
 
+                const expires = steam['expiration_date|datetime'];
+
                 providers.steam = {
                     appId: steamAppId,
+                    expiry: {
+                        expiresDatetime: expires,
+                        currentDate: Date.now(),
+                        expiresInDay: steam.num_days_until_expired,
+                        isExpired: steam.is_expired,
+                    },
+                    countries: {
+                        exclusive: steam.exclusive_countries || [],
+                        disallowed: steam.disallowed_countries || [],
+                    },
+                    displayName: steam.human_name || '',
+                    customInstructionsHtml: steam.custom_instructions_html || '',
                 };
             }
 
@@ -176,6 +218,27 @@ async function extractChoices()
 
                 providers.gog = {
                     hasKey: true,
+                    raw: gog,
+                };
+            }
+
+            const origin = tpkds.find(tpk => tpk.key_type === 'origin');
+            if (origin) {
+                const expires = origin['expiration_date|datetime'];
+
+                providers.origin = {
+                    expiry: {
+                        expiresDatetime: expires,
+                        currentDate: Date.now(),
+                        expiresInDay: origin.num_days_until_expired,
+                        isExpired: origin.is_expired,
+                    },
+                    countries: {
+                        exclusive: origin.exclusive_countries || [],
+                        disallowed: origin.disallowed_countries || [],
+                    },
+                    displayName: origin.human_name || '',
+                    customInstructionsHtml: origin.custom_instructions_html || '',
                 };
             }
         }
@@ -209,6 +272,12 @@ async function extractChoices()
 
                     providers.epicGames = {
                         hasKey: true,
+                        countries: {
+                            exclusive: epicGames.exclusive_countries || [],
+                            disallowed: epicGames.disallowed_countries || [],
+                        },
+                        displayName: epicGames.human_name || '',
+                        customInstructionsHtml: epicGames.custom_instructions_html || '',
                     };
 
                     continue;
@@ -289,17 +358,19 @@ async function extractChoices()
         }, 2000);
     });
 
-    // Handle button click for copying HTML title list
+    // Handle button click for copying the JSON data for the month
+    // Prefixed with the correct key so that I can easily paste into the existing data.json.
     const monthBtn = document.querySelector('#copyMonthJson');
     monthBtn.addEventListener('click', () => {
         const choices = getChoicesStore();
 
-        let result = {};
+        let result = null;
         if (choices[monthSlug]) {
-            result[monthSlug] = choices[monthSlug];
+            result = choices[monthSlug];
         }
 
-        GM_setClipboard(JSON.stringify(result));
+        const clipboardOutput = `,\n"${monthSlug}": ${JSON.stringify(result)}`;
+        GM_setClipboard(clipboardOutput);
 
         const btnText = monthBtn.querySelector('.button-text');
         btnText.textContent = 'Copied!';
@@ -313,4 +384,14 @@ async function extractChoices()
     });
 }
 
+function expandGameGrid()
+{
+    GM_addStyle(`.monthly-product-page { max-width: 125em; }`);
+}
+
 extractChoices();
+expandGameGrid();
+unsafeWindow.refreshAllChoiceData = refreshChoiceData;
+unsafeWindow.getProductData = getProductData;
+
+console.log('[Userscript] Available methods: refreshChoiceData, getProductData');
