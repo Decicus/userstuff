@@ -1,0 +1,27 @@
+/* ==UserStyle==
+@name        LowEndWide
+@namespace   github.com/Decicus/userstuff
+@homepageURL https://github.com/Decicus/userstuff
+@version     0.0.1
+@updateURL   https://github.com/Decicus/userstuff/raw/master/css/LowEndWide.user.css
+@description Work in progress CSS rules to adjust the width of LowEndTalk/LowEndSpirit (probably also works on other VanillaForums-based forums).
+@author      Decicus
+@license     MIT
+*/
+
+#Frame {
+    width: 95%;
+}
+
+#Body {
+    width: 100%;
+}
+
+.Row {
+    width: 90%;
+}
+
+/* Make sure tables in posts also uses the width of the post */
+.Message table {
+    width: 100%;
+}
