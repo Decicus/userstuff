@@ -2,12 +2,12 @@
 @name        LowEndWide
 @namespace   github.com/Decicus/userstuff
 @homepageURL https://github.com/Decicus/userstuff
-@version     0.0.1
+@version     0.0.2
 @updateURL   https://github.com/Decicus/userstuff/raw/master/css/LowEndWide.user.css
 @description Work in progress CSS rules to adjust the width of LowEndTalk/LowEndSpirit (probably also works on other VanillaForums-based forums).
 @author      Decicus
 @license     MIT
-*/
+==/UserStyle== */
 
 #Frame {
     width: 95%;
