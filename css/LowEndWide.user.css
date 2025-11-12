@@ -2,26 +2,28 @@
 @name        LowEndWide
 @namespace   github.com/Decicus/userstuff
 @homepageURL https://github.com/Decicus/userstuff
-@version     0.0.2
+@version     0.0.3
 @updateURL   https://github.com/Decicus/userstuff/raw/master/css/LowEndWide.user.css
-@description Work in progress CSS rules to adjust the width of LowEndTalk/LowEndSpirit (probably also works on other VanillaForums-based forums).
+@description Work in progress CSS rules to adjust the width of LowEndTalk (might also work on other VanillaForums-based forums, but have noty tested).
 @author      Decicus
 @license     MIT
 ==/UserStyle== */
 
-#Frame {
-    width: 95%;
-}
+@-moz-document domain("lowendtalk.com") {
+    #Frame {
+        width: 95%;
+    }
 
-#Body {
-    width: 100%;
-}
+    #Body {
+        width: 100%;
+    }
 
-.Row {
-    width: 90%;
-}
+    .Row {
+        width: 90%;
+    }
 
-/* Make sure tables in posts also uses the width of the post */
-.Message table {
-    width: 100%;
+    /* Make sure tables in posts also uses the width of the post */
+    .Message table {
+        width: 100%;
+    }
 }
