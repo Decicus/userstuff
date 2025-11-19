@@ -5,22 +5,41 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.3.2
+// @version     1.4.2
 // @author      Decicus
-// @description Hides comments (by default) from specified users on LET.
+// @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
 // @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
 // ==/UserScript==
 
 /**
  * Developed for the userscript manager Violentmonkey, but should work for others too.
- * Make sure to go to the 'values' tab after installing the script and set your list of blacklisted users.
- * It should look like this: https://i.alex.lol/2021-02-02_4UVIPt.png
+ * After installing the script, visit LowEndTalk or LowEndSpirit, which will automatically fill in the "Values" tab with default settings.
+ * These are JSON. Maybe eventually I'll integrate into the userscript manager's context menu, but for now it's all manual (sorry!).
  *
- * Forum usernames are case sensitive; 'decicus' won't match 'Decicus' and vice versa.
+ * You can use this to automatically hide comments and threads from certain users.
+ * These are controlled independently (e.g. you can hide comments from certain users, but still show threads that they've created).
+ * You can also choose to toggle hiding comments/threads overall, while keeping your existing lists, if you need that in some cases.
+ *
+ * The general "settings", will by default hide comments and show threads (even if the list of users is filled): https://i.d0.no/73C94cwaUe4CZzro.png
+ *
+ * The "blacklistedUsers" value would look something like this: https://i.d0.no/lo44SPnp1VhzaJ69.png
+ *
+ * ===================================================================
+ *
+ * Custom "roles" are also supported. They will only show up for you, but you could use that to "tag" people (maybe for fun screenshots, idk).
+ * Example of the JSON format in "Values" is: {"Decicus":["I Created This Userscript 😎","Here's a second role just to showcase multiple"]}
+ * Which looks like this: https://i.d0.no/oq4qZ1oFErM6QVjU.png
+ *
+ * By default the custom roles value is filled with just an example for a user that doesn't exist.
+ *
+ * ===================================================================
+ *
+ * Forum usernames are CASE SENSITIVE. 'decicus' won't match 'Decicus', for example. I could fix this, but I'm way too lazy.
  */
 let users = GM_getValue('blacklistedUsers', null);
 let settings = GM_getValue('settings', null);
+let customRoles = GM_getValue('customRoles', null);
 
 if (!settings) {
     const defaultSettings = {
@@ -32,12 +51,20 @@ if (!settings) {
     settings = defaultSettings;
 }
 
+if (!customRoles) {
+    customRoles = {
+        "ThisIsAnExampleUsernameHopefully": ["Cool person", "🐐"],
+    };
+
+    GM_setValue('customRoles', customRoles);
+}
+
 /**
  * Convert from old users array to new users _object_
  */
 if (!users || Array.isArray(users)) {
     users = {
-        comments: users,
+        comments: users || [],
         threads: [],
     };
 
@@ -54,6 +81,9 @@ let hiddenThreadCount = 0;
 
 let toggleCommentsBtnAction = null;
 let toggleThreadsBtnAction = null;
+
+const hash = window.location.hash.replace('#', '');
+const isDirectComment = hash.startsWith('Comment_');
 
 function toggleCommentElements(ev)
 {
@@ -72,7 +102,7 @@ function toggleCommentElements(ev)
     {
         for (const element of hiddenComments[user])
         {
-            console.log(`[LowEndTalk - Blacklist Users] ${hideText} comment from ${user}:`, element);
+            console.log(`[LowEndForums - Blacklist Users] ${hideText} comment from ${user}:`, element);
 
             if (commentsHidden) {
                 element.classList.add('hidden');
@@ -118,6 +148,15 @@ function hideComments()
                 // .Item.ItemComment.Role_Member
                 .parentElement;
 
+            if (isDirectComment) {
+                const commentId = commentElement.getAttribute('id');
+                console.log(commentId);
+                if (commentId === hash) {
+                    console.log('[LowEndForums - Blacklist Users] Intentionally displaying comment as its directly linked to', commentElement);
+                    continue;
+                }
+            }
+
             hiddenComments[user].push(commentElement);
         }
     }
@@ -126,7 +165,7 @@ function hideComments()
      * If there are no comments to hide, we skip the rest.
      */
     if (hiddenCommentCount === 0) {
-        console.log('[LowEndTalk - Blacklist Users] No comments from blacklist users found');
+        console.log('[LowEndForums - Blacklist Users] No comments from blacklist users found');
         return;
     }
 
@@ -181,7 +220,7 @@ function toggleThreadElements()
     {
         for (const element of hiddenThreads[user])
         {
-            console.log(`[LowEndTalk - Blacklist Users] ${hideText} thread from ${user}:`, element);
+            console.log(`[LowEndForums - Blacklist Users] ${hideText} thread from ${user}:`, element);
 
             if (threadsHidden) {
                 element.classList.add('hidden');
@@ -213,7 +252,7 @@ function hideThreads()
     }
 
     if (hiddenThreadCount === 0) {
-        console.log('[LowEndTalk - Blacklist Users] No threads from blacklist users found');
+        console.log('[LowEndForums - Blacklist Users] No threads from blacklist users found');
         return;
     }
 
@@ -229,5 +268,28 @@ function hideThreads()
     toggleThreadElements();
 }
 
+function applyCustomRoles()
+{
+    for (const user in customRoles)
+    {
+        const elements = document.querySelectorAll(`.Author > .PhotoWrap[title="${user}"]`);
+        for (const avatar of elements)
+        {
+            const wrapper = avatar.parentElement.parentElement;
+            const roleTitle = wrapper.querySelector('.RoleTitle');
+
+            if (!roleTitle) {
+                continue;
+            }
+
+            let currentRoles = roleTitle.textContent.split(', ');
+            currentRoles = [... currentRoles, ... customRoles[user]];
+
+            roleTitle.textContent = currentRoles.join(', ');
+        }
+    }
+}
+
 hideComments();
 hideThreads();
+applyCustomRoles();
