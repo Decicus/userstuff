@@ -5,7 +5,7 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.5.0
+// @version     1.6.0
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -337,3 +337,33 @@ function applyCustomRoles()
 hideComments();
 hideThreads();
 applyCustomRoles();
+
+document.addEventListener('keydown', (ev) => {
+    if (!ev.altKey) {
+        return;
+    }
+
+    // Toggle hiding comments / quotes
+    if (ev.code === 'KeyX') {
+        ev.preventDefault();
+
+        if (hiddenCommentCount === 0 && hiddenQuotesCount === 0) {
+            console.warn('[LowEndForums - Blacklist Users] No comments or quotes from blacklist users found, cannot toggle visibility');
+            return;
+        }
+
+        toggleCommentElements();
+    }
+
+    // Toggle hiding threads
+    if (ev.code === 'KeyZ') {
+        ev.preventDefault();
+
+        if (hiddenThreadCount === 0) {
+            console.warn('[LowEndForums - Blacklist Users] No threads from blacklist users found, cannot toggle visibility');
+            return;
+        }
+
+        toggleThreadElements();
+    }
+});
