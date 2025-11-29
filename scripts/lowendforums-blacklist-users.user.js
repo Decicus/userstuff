@@ -5,7 +5,7 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.4.2
+// @version     1.5.0
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -73,7 +73,9 @@ if (!users || Array.isArray(users)) {
 
 let commentsHidden = false;
 const hiddenComments = {};
+const hiddenQuotes = {};
 let hiddenCommentCount = 0;
+let hiddenQuotesCount = 0;
 
 let threadsHidden = false;
 const hiddenThreads = {};
@@ -110,6 +112,35 @@ function toggleCommentElements(ev)
             }
 
             element.classList.remove('hidden');
+        }
+
+        for (const quote of hiddenQuotes[user])
+        {
+            console.log(`[LowEndForums - Blacklist Users] ${hideText} quote from ${user}:`, quote);
+
+            if (commentsHidden) {
+                quote.classList.add('hidden');
+
+                const commentUrl = quote.querySelector('a[href*="/discussion"]');
+
+                if (commentUrl) {
+                    const clonedUrl = commentUrl.cloneNode(true);
+                    const cloneParent = document.createElement('p');
+                    cloneParent.setAttribute('data-quote-clone', '1');
+                    cloneParent.appendChild(clonedUrl);
+
+                    quote.insertAdjacentElement('afterend', cloneParent);
+                }
+
+                continue;
+            }
+
+            quote.classList.remove('hidden');
+
+            const clonedUrl = quote.parentElement.querySelector('p[data-quote-clone="1"]');
+            if (clonedUrl) {
+                clonedUrl.remove();
+            }
         }
     }
 }
@@ -159,13 +190,26 @@ function hideComments()
 
             hiddenComments[user].push(commentElement);
         }
+
+        const quotes = document.querySelectorAll('.UserQuote > .QuoteText > p');
+        const byAuthor = Array.from(quotes).filter(quote => { return quote.textContent.toLowerCase().includes(`@${user.toLowerCase()} said`); });
+
+        hiddenQuotes[user] = [];
+        for (const quote of byAuthor)
+        {
+            hiddenQuotes[user].push(quote);
+            hiddenQuotesCount += 1;
+
+            console.log(`[LowEndForums - Blacklist Users] Hiding quote from ${user}:`, quote);
+            quote.classList.add('hidden');
+        }
     }
 
     /**
      * If there are no comments to hide, we skip the rest.
      */
-    if (hiddenCommentCount === 0) {
-        console.log('[LowEndForums - Blacklist Users] No comments from blacklist users found');
+    if (hiddenCommentCount === 0 && hiddenQuotesCount === 0) {
+        console.log('[LowEndForums - Blacklist Users] No comments or quotes from blacklist users found');
         return;
     }
 
@@ -173,7 +217,7 @@ function hideComments()
      * document.createElement() is far too convoluted for this shit.
      * Just handcraft it.
      */
-    const toggleButtonHtml = `<a class="Button Secondary Action BigButton" id="toggleHiddenComments"><span class="action">Show</span> ${hiddenCommentCount} comment${hiddenCommentCount === 1 ? '' : 's'} from blacklisted users</a>`;
+    const toggleButtonHtml = `<a class="Button Secondary Action BigButton" id="toggleHiddenComments"><span class="action">Show</span> ${hiddenCommentCount} comment${hiddenCommentCount === 1 ? '' : 's'} / ${hiddenQuotesCount} quote${hiddenQuotesCount === 1 ? '' : 's'} from blacklisted users</a>`;
 
     /**
      * Add the button to the page
