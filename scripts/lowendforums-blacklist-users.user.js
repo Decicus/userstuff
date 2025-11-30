@@ -5,7 +5,7 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.6.0
+// @version     1.6.1
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -119,7 +119,7 @@ function toggleCommentElements(ev)
             console.log(`[LowEndForums - Blacklist Users] ${hideText} quote from ${user}:`, quote);
 
             if (commentsHidden) {
-                quote.classList.add('hidden');
+                quote.parentElement.classList.add('hidden');
 
                 const commentUrl = quote.querySelector('a[href*="/discussion"]');
 
@@ -135,7 +135,7 @@ function toggleCommentElements(ev)
                 continue;
             }
 
-            quote.classList.remove('hidden');
+            quote.parentElement.classList.remove('hidden');
 
             const clonedUrl = quote.parentElement.querySelector('p[data-quote-clone="1"]');
             if (clonedUrl) {
