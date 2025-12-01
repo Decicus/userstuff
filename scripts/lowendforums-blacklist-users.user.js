@@ -5,7 +5,7 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.6.1
+// @version     1.6.2
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -87,8 +87,7 @@ let toggleThreadsBtnAction = null;
 const hash = window.location.hash.replace('#', '');
 const isDirectComment = hash.startsWith('Comment_');
 
-function toggleCommentElements(ev)
-{
+function toggleCommentElements(ev) {
     /**
      * Flip the status.
      */
@@ -100,10 +99,8 @@ function toggleCommentElements(ev)
     const hideText = commentsHidden ? 'Hiding' : 'Showing';
     toggleCommentsBtnAction.textContent = commentsHidden ? 'Show' : 'Hide';
 
-    for (const user of users.comments)
-    {
-        for (const element of hiddenComments[user])
-        {
+    for (const user of users.comments) {
+        for (const element of hiddenComments[user]) {
             console.log(`[LowEndForums - Blacklist Users] ${hideText} comment from ${user}:`, element);
 
             if (commentsHidden) {
@@ -114,12 +111,13 @@ function toggleCommentElements(ev)
             element.classList.remove('hidden');
         }
 
-        for (const quote of hiddenQuotes[user])
-        {
+        for (const quote of hiddenQuotes[user]) {
             console.log(`[LowEndForums - Blacklist Users] ${hideText} quote from ${user}:`, quote);
 
+            const quoteTarget = quote.parentElement;
+
             if (commentsHidden) {
-                quote.parentElement.classList.add('hidden');
+                quoteTarget.classList.add('hidden');
 
                 const commentUrl = quote.querySelector('a[href*="/discussion"]');
 
@@ -129,30 +127,33 @@ function toggleCommentElements(ev)
                     cloneParent.setAttribute('data-quote-clone', '1');
                     cloneParent.appendChild(clonedUrl);
 
-                    quote.insertAdjacentElement('afterend', cloneParent);
+                    quoteTarget.insertAdjacentElement('afterend', cloneParent);
                 }
 
                 continue;
             }
 
-            quote.parentElement.classList.remove('hidden');
-
-            const clonedUrl = quote.parentElement.querySelector('p[data-quote-clone="1"]');
-            if (clonedUrl) {
-                clonedUrl.remove();
-            }
+            quoteTarget.classList.remove('hidden');
         }
+    }
+
+    // Clean up any quote clones if we're showing hidden comments/quotes.
+    if (commentsHidden) {
+        return;
+    }
+
+    const quoteClones = document.querySelectorAll('p[data-quote-clone="1"]');
+    for (const clone of quoteClones) {
+        clone.remove();
     }
 }
 
-function hideComments()
-{
+function hideComments() {
     if (!settings.hideComments) {
         return;
     }
 
-    for (const user of users.comments)
-    {
+    for (const user of users.comments) {
         /**
          * Find all comments by user
          */
@@ -161,8 +162,7 @@ function hideComments()
         hiddenComments[user] = [];
         hiddenCommentCount += elements.length;
 
-        for (const element of elements)
-        {
+        for (const element of elements) {
             /**
              * We want to hide one of the parent elements... 5 levels up.
              * I'm not ashamed, fuck you.
@@ -195,13 +195,12 @@ function hideComments()
         const byAuthor = Array.from(quotes).filter(quote => { return quote.textContent.toLowerCase().includes(`@${user.toLowerCase()} said`); });
 
         hiddenQuotes[user] = [];
-        for (const quote of byAuthor)
-        {
+        for (const quote of byAuthor) {
             hiddenQuotes[user].push(quote);
             hiddenQuotesCount += 1;
 
             console.log(`[LowEndForums - Blacklist Users] Hiding quote from ${user}:`, quote);
-            quote.classList.add('hidden');
+            quote.parentElement.classList.add('hidden');
         }
     }
 
@@ -247,8 +246,7 @@ function hideComments()
  * Thread handling.
  * Lots of duplicate code from the 'hide comments' handling, but whatever.
  */
-function toggleThreadElements()
-{
+function toggleThreadElements() {
     /**
      * Flip the status.
      */
@@ -260,10 +258,8 @@ function toggleThreadElements()
     const hideText = threadsHidden ? 'Hiding' : 'Showing';
     toggleThreadsBtnAction.textContent = threadsHidden ? 'Show' : 'Hide';
 
-    for (const user of users.threads)
-    {
-        for (const element of hiddenThreads[user])
-        {
+    for (const user of users.threads) {
+        for (const element of hiddenThreads[user]) {
             console.log(`[LowEndForums - Blacklist Users] ${hideText} thread from ${user}:`, element);
 
             if (threadsHidden) {
@@ -276,8 +272,7 @@ function toggleThreadElements()
     }
 }
 
-function hideThreads()
-{
+function hideThreads() {
     if (!settings.hideThreads) {
         return;
     }
@@ -312,13 +307,10 @@ function hideThreads()
     toggleThreadElements();
 }
 
-function applyCustomRoles()
-{
-    for (const user in customRoles)
-    {
+function applyCustomRoles() {
+    for (const user in customRoles) {
         const elements = document.querySelectorAll(`.Author > .PhotoWrap[title="${user}"]`);
-        for (const avatar of elements)
-        {
+        for (const avatar of elements) {
             const wrapper = avatar.parentElement.parentElement;
             const roleTitle = wrapper.querySelector('.RoleTitle');
 
@@ -327,7 +319,7 @@ function applyCustomRoles()
             }
 
             let currentRoles = roleTitle.textContent.split(', ');
-            currentRoles = [... currentRoles, ... customRoles[user]];
+            currentRoles = [...currentRoles, ...customRoles[user]];
 
             roleTitle.textContent = currentRoles.join(', ');
         }
