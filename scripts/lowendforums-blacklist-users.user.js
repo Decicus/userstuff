@@ -5,7 +5,7 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.6.2
+// @version     1.6.3
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -114,10 +114,8 @@ function toggleCommentElements(ev) {
         for (const quote of hiddenQuotes[user]) {
             console.log(`[LowEndForums - Blacklist Users] ${hideText} quote from ${user}:`, quote);
 
-            const quoteTarget = quote.parentElement;
-
             if (commentsHidden) {
-                quoteTarget.classList.add('hidden');
+                quote.classList.add('hidden');
 
                 const commentUrl = quote.querySelector('a[href*="/discussion"]');
 
@@ -127,13 +125,13 @@ function toggleCommentElements(ev) {
                     cloneParent.setAttribute('data-quote-clone', '1');
                     cloneParent.appendChild(clonedUrl);
 
-                    quoteTarget.insertAdjacentElement('afterend', cloneParent);
+                    quote.insertAdjacentElement('afterend', cloneParent);
                 }
 
                 continue;
             }
 
-            quoteTarget.classList.remove('hidden');
+            quote.classList.remove('hidden');
         }
     }
 
@@ -196,11 +194,14 @@ function hideComments() {
 
         hiddenQuotes[user] = [];
         for (const quote of byAuthor) {
-            hiddenQuotes[user].push(quote);
+            // Get the .QuoteText element
+            const quoteParent = quote.parentElement;
+
+            hiddenQuotes[user].push(quoteParent);
             hiddenQuotesCount += 1;
 
-            console.log(`[LowEndForums - Blacklist Users] Hiding quote from ${user}:`, quote);
-            quote.parentElement.classList.add('hidden');
+            console.log(`[LowEndForums - Blacklist Users] Hiding quote from ${user}:`, quoteParent);
+            quoteParent.classList.add('hidden');
         }
     }
 
