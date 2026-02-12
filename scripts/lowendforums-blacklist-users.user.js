@@ -5,7 +5,7 @@
 // @match       https://lowendspirit.com/*
 // @grant       GM_getValue
 // @grant       GM_setValue
-// @version     1.6.3
+// @version     1.7.0
 // @author      Decicus
 // @description Hides comments (by default) from specified users on LET/LES.
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/lowendforums-blacklist-users.user.js
@@ -35,7 +35,7 @@
  *
  * ===================================================================
  *
- * Forum usernames are CASE SENSITIVE. 'decicus' won't match 'Decicus', for example. I could fix this, but I'm way too lazy.
+ * Forum usernames are CASE SENSITIVE. 'decicus' won't match 'Decicus', for example. I could fix this (probably), but I'm way too lazy.
  */
 let users = GM_getValue('blacklistedUsers', null);
 let settings = GM_getValue('settings', null);
@@ -100,6 +100,9 @@ function toggleCommentElements(ev) {
     toggleCommentsBtnAction.textContent = commentsHidden ? 'Show' : 'Hide';
 
     for (const user of users.comments) {
+        /**
+         * Handle toggling display of comments
+         */
         for (const element of hiddenComments[user]) {
             console.log(`[LowEndForums - Blacklist Users] ${hideText} comment from ${user}:`, element);
 
@@ -111,6 +114,9 @@ function toggleCommentElements(ev) {
             element.classList.remove('hidden');
         }
 
+        /**
+         * Same for quotes, except this also adds a placeholder "@ExampleName said".
+         */
         for (const quote of hiddenQuotes[user]) {
             console.log(`[LowEndForums - Blacklist Users] ${hideText} quote from ${user}:`, quote);
 
@@ -135,7 +141,9 @@ function toggleCommentElements(ev) {
         }
     }
 
-    // Clean up any quote clones if we're showing hidden comments/quotes.
+    /**
+     * Clean up any placeholders added when hiding quotes
+     */
     if (commentsHidden) {
         return;
     }
@@ -189,6 +197,7 @@ function hideComments() {
             hiddenComments[user].push(commentElement);
         }
 
+        // Hide any quotes from blacklisted users (goes under same category as comments).
         const quotes = document.querySelectorAll('.UserQuote > .QuoteText > p');
         const byAuthor = Array.from(quotes).filter(quote => { return quote.textContent.toLowerCase().includes(`@${user.toLowerCase()} said`); });
 
@@ -336,27 +345,19 @@ document.addEventListener('keydown', (ev) => {
         return;
     }
 
-    // Toggle hiding comments / quotes
+    /**
+     * It's fine to use the same key for both toggles, as thread listing is never shown on a discussion page (and vice versa).
+     */
     if (ev.code === 'KeyX') {
         ev.preventDefault();
 
-        if (hiddenCommentCount === 0 && hiddenQuotesCount === 0) {
-            console.warn('[LowEndForums - Blacklist Users] No comments or quotes from blacklist users found, cannot toggle visibility');
-            return;
+        if (hiddenCommentCount > 0 || hiddenQuotesCount > 0) {
+            toggleCommentElements();
         }
 
-        toggleCommentElements();
-    }
-
-    // Toggle hiding threads
-    if (ev.code === 'KeyZ') {
-        ev.preventDefault();
-
-        if (hiddenThreadCount === 0) {
-            console.warn('[LowEndForums - Blacklist Users] No threads from blacklist users found, cannot toggle visibility');
-            return;
+        if (hiddenThreadCount > 0) {
+            toggleThreadElements();
         }
-
-        toggleThreadElements();
     }
+
 });
