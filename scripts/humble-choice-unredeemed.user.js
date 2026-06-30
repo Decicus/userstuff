@@ -7,7 +7,7 @@
 // @grant       GM_openInTab
 // @grant       GM_addStyle
 // @grant       unsafeWindow
-// @version     1.6.0
+// @version     1.7.0
 // @downloadURL https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @updateURL   https://raw.githubusercontent.com/Decicus/userstuff/master/scripts/humble-choice-unredeemed.user.js
 // @author      Decicus
@@ -61,18 +61,47 @@ function setChoicesStore(choices)
 function refreshChoiceData()
 {
     let interval = null;
-    const slugs = Object.keys(getChoicesStore());
+    const months = [
+        'january',
+        'february',
+        'march',
+        'april',
+        'may',
+        'june',
+        'july',
+        'august',
+        'september',
+        'october',
+        'november',
+        'december',
+    ];
 
-    let lastIdx = -1;
+    const minYear = 2019;
+    const minYearMonth = 11; // December 2019 was the first month where they used the new subscription page with the JSON data embedded in the DOM. Before that, I believe it only exists as regular (legacy?) "Keys" pages
+    const maxYear = new Date().getFullYear();
+    const maxMonth = new Date().getMonth(); // 0-indexed
+
+    let currentMonth = (minYearMonth - 1); // Increments on first interval tick, so we start at the month before the first month we want to fetch.
+    let currentYear = minYear;
     interval = setInterval(() => {
-        lastIdx++;
-        if (!slugs[lastIdx]) {
+        currentMonth++;
+
+        // December 20XX rolls over to January 20XX+1
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+
+        if (currentYear >= maxYear && currentMonth > maxMonth) {
             clearInterval(interval);
+            console.log('Finished refreshing all months');
             return;
         }
 
-        const slug = slugs[lastIdx];
-        const url = `https://www.humblebundle.com/membership/${slug}`;
+        const slug = `${months[currentMonth]}-${currentYear}`;
+        console.log(`Refreshing data for ${slug}`);
+
+        const url = `https://www.humblebundle.com/subscription/${slug}`;
 
         const choiceTab = GM_openInTab(url, {active: false});
 
@@ -394,4 +423,4 @@ expandGameGrid();
 unsafeWindow.refreshAllChoiceData = refreshChoiceData;
 unsafeWindow.getProductData = getProductData;
 
-console.log('[Userscript] Available methods: refreshChoiceData, getProductData');
+console.log('[Userscript] Available methods: refreshAllChoiceData, getProductData');
